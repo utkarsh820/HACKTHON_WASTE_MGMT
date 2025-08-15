@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+Hackathon_Waste_Management.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
+catboost_info/
+
+# Data files
+# Uncomment if you don't want to track raw data
+# data/raw/
+# Uncomment if you don't want to track processed data
+# data/processed/
+
+# Log files
+logs/
+*.log
+
+# MLflow
+mlruns/
+
+# Models (comment this out if you want to track models in git)
+# models/
+# artifacts/*.pkl
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Temporary files
+*.bak
+*.tmp
