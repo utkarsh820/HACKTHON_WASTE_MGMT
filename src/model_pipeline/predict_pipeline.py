@@ -1,5 +1,6 @@
 import joblib
 import sys
+import pandas as pd
 from src.utils.exception import CustomException
 from src.utils.logger import logging
 
@@ -17,9 +18,25 @@ class ModelPredictor:
 
     def predict(self, features):
         try:
+            # Check if features is already a numpy array (preprocessed data)
+            if not isinstance(features, pd.DataFrame):
+                return self.model.predict(features)
+            
+            # Check if we're using the focused model (which has internal preprocessing)
+            if "waste_mgmt_focused" in self.model_path:
+                # Ensure we have the specific features needed for the focused model
+                required_features = ['city/district', 'recycling_infrastructure_rating', 'green_technology_adoption']
+                if all(feature in features.columns for feature in required_features):
+                    # Only keep the required features for focused model
+                    features = features[required_features].copy()
+                    logging.info(f"Using focused model with specific features: {required_features}")
+                else:
+                    missing = [f for f in required_features if f not in features.columns]
+                    raise CustomException(f"Missing required features for focused model: {missing}", sys)
+            
             return self.model.predict(features)
         except Exception as e:
-            raise CustomException("Prediction failed", sys) from e
+            raise CustomException(f"Prediction failed: {str(e)}", sys) from e
 
     def explain_prediction(self, prediction):
         try:

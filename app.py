@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib, os, sys
+from pathlib import Path
 sys.path.append(os.path.abspath('.'))
 from src.model_pipeline.predict_pipeline import ModelPredictor
 
@@ -9,7 +10,14 @@ st.set_page_config(page_title="♻️ Waste Prediction", page_icon="♻️", lay
 
 @st.cache_resource
 def load_model():
-    return ModelPredictor("models/waste_mgmt.joblib"), joblib.load("artifacts/preprocessor.pkl")
+    # Determine which model to use - focused model is preferred if available
+    model_path = "models/waste_mgmt_focused.joblib" if os.path.exists("models/waste_mgmt_focused.joblib") else "models/waste_mgmt.joblib"
+    st.session_state["using_focused_model"] = "focused" in model_path
+    
+    if st.session_state["using_focused_model"]:
+        return ModelPredictor(model_path), None  # No external preprocessor needed for focused model
+    else:
+        return ModelPredictor(model_path), joblib.load("artifacts/preprocessor.pkl")
 
 @st.cache_data
 def load_data():
@@ -42,8 +50,14 @@ if st.button("Predict Recycling Rate"):
         }])
         
         try:
-            transformed_features = preproc.transform(input_df)
-            raw_pred = model.predict(transformed_features)[0]
+            # Handle prediction based on model type
+            if st.session_state.get("using_focused_model", False):
+                # Focused model has its own preprocessing
+                raw_pred = model.predict(input_df)[0]
+            else:
+                # Use external preprocessor for the standard model
+                transformed_features = preproc.transform(input_df)
+                raw_pred = model.predict(transformed_features)[0]
             
             # Apply sigmoid-like scaling to naturally limit to 0-100 range
             # This creates a smooth curve that approaches but never exceeds 100

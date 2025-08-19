@@ -80,19 +80,39 @@ def test_prediction():
         sample_X = X.iloc[[0]]
         sample_y_true = y_true[0]
         
-        # Load the preprocessor that was fitted during training
-        preprocessor_path = os.path.join("artifacts", "preprocessor.pkl")
-        preprocessor = joblib.load(preprocessor_path)
-        logging.info(f"Loaded preprocessor from {preprocessor_path}")
+        # Check if focused model exists
+        focused_model_path = os.path.join("models", "waste_mgmt_focused.joblib")
+        using_focused_model = os.path.exists(focused_model_path)
         
         # Load the model
-        predictor = ModelPredictor()
+        model_path = focused_model_path if using_focused_model else None
+        predictor = ModelPredictor(model_path)
         
-        # Transform features
-        sample_X_transformed = preprocessor.transform(sample_X)
-        
-        # Make prediction
-        prediction = predictor.predict(sample_X_transformed)[0]
+        if using_focused_model:
+            # For focused model, use raw features (model has internal preprocessing)
+            logging.info("Using focused model with internal preprocessing")
+            
+            # Ensure we have all required features
+            required_features = ['city/district', 'recycling_infrastructure_rating', 'green_technology_adoption']
+            if all(feature in sample_X.columns for feature in required_features):
+                # Only keep required features
+                sample_X = sample_X[required_features].copy()
+                logging.info(f"Using only specific features: {required_features}")
+            
+            # Make prediction with raw features
+            prediction = predictor.predict(sample_X)[0]
+        else:
+            # For standard model, use preprocessor
+            logging.info("Using standard model with external preprocessing")
+            preprocessor_path = os.path.join("artifacts", "preprocessor.pkl")
+            preprocessor = joblib.load(preprocessor_path)
+            logging.info(f"Loaded preprocessor from {preprocessor_path}")
+            
+            # Transform features
+            sample_X_transformed = preprocessor.transform(sample_X)
+            
+            # Make prediction
+            prediction = predictor.predict(sample_X_transformed)[0]
         
         # Calculate error metrics
         absolute_error = abs(prediction - sample_y_true)
